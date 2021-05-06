@@ -1,49 +1,54 @@
 defmodule Stormex.Discover do
   require Logger
 
-  @broadcast_port 5670
-  @broadcast_addr {255, 255, 255, 255}
-  @timeout 1500
-
-  @doc """
-  Discover Drain servers once.
-  """
-  def discover(group \\ "default") do
-    with {:ok, socket} <- :gen_udp.open(0, [:binary, {:active, false}, {:broadcast, true}]),
-         :ok <- :gen_udp.send(socket, @broadcast_addr, @broadcast_port, locator(group)),
-         {:ok, {addr, _bport, beacon}} <- :gen_udp.recv(socket, 0, @timeout),
-         {:ok, {_group, _iid, sport}} <- parse_beacon(beacon) do
-      {:ok, {addr, sport}}
-    else
-      {:error, reason} = err ->
-        Logger.warn("Locator beacon failed: #{inspect(reason)}")
-        err
-    end
-  end
-
-  def locator(group \\ "default") do
-    [
-      <<"DRA", 1>>,
-      format_group(group),
-      # iid 0
-      <<0::64>>,
-      # port 0
-      <<0::16>>
+  @default_args [
+    autostart: true,
+    groups: [
+      [group: "default"]
     ]
+  ]
+
+  def start() do
+    Keyword.get(args([]), :groups)
+    |> Enum.each(&start_group/1)
   end
 
-  def parse_beacon(<<"DRA", 1, group::binary-size(8), iid::binary-size(8), port::16>>) do
-    {:ok, {group, iid, port}}
+  def stop() do
+    DynamicSupervisor.stop(Stormex.Discover.Supervisor)
   end
 
-  def parse_beacon(_) do
-    {:error, "Can't parse beacon"}
+  def beacons() do
+    Registry.select(Stormex.Discover.Registry, [{{:_, :"$2", :_}, [], [:"$2"]}])
+    |> Enum.map(&gather_beacons/1)
+    |> List.flatten()
   end
 
-  def format_group(group \\ "default") do
-    group
-    |> to_string()
-    |> String.pad_trailing(8, "_")
-    |> String.slice(0, 8)
+  def beacons(group) do
+    Registry.lookup(Stormex.Discover.Registry, group)
+    |> Enum.map(fn {pid, _value} -> pid end)
+    |> Enum.map(&gather_beacons/1)
+    |> List.flatten()
+  end
+
+  def autostart?() do
+    Keyword.get(args([]), :autostart)
+  end
+
+  defp gather_beacons(pid) do
+    GenServer.call(pid, :beacons)
+  end
+
+  defp start_group(group_args) do
+    DynamicSupervisor.start_child(
+      Stormex.Discover.Supervisor,
+      {Stormex.Discover.Server, group_args}
+    )
+  end
+
+  defp args(args) do
+    @default_args
+    |> Keyword.merge(Application.get_env(:stormex, __MODULE__, []))
+    |> Keyword.merge(args)
+    |> Keyword.take(Keyword.keys(@default_args))
   end
 end

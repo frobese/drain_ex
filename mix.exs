@@ -22,7 +22,9 @@ defmodule Stormex.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:cbor, "~> 1.0"}
+      {:cbor, "~> 1.0"},
+      {:credo, "~> 1.5", only: [:dev, :test]},
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
     ]
   end
 end
