@@ -3,13 +3,11 @@ defmodule Stormex.Application do
 
   def start(_type, _args) do
     children = [
-      {DynamicSupervisor, strategy: :one_for_one, name: Stormex.Discover.Supervisor},
-      {Registry, keys: :unique, name: Stormex.Discover.Registry}
+      {Stormex.Discover, []},
+      {Registry, keys: :duplicate, name: Stormex.Link.Registry}
     ]
 
     opts = [strategy: :one_for_one, name: Stormex.Supervisor]
     Supervisor.start_link(children, opts)
-  after
-    if(Stormex.Discover.autostart?(), do: Stormex.Discover.start())
   end
 end

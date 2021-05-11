@@ -3,78 +3,53 @@ defmodule Stormex.Link do
 
   require Logger
 
-  alias Stormex.Protocol
+  alias Stormex.{Config, Protocol}
 
-  defstruct [:args, :target, :socket, handshake: false]
-
-  @handshake_timeout 5_000
-
-  @default_args [
-    discover: true,
-    # static_fallback: false,
-    host: "localhost",
-    port: 6986,
-    group: "default",
-    retries: 5
-  ]
-
-  def start(args \\ []) do
-    merged_args = args(args)
-    GenServer.start(__MODULE__, merged_args, Keyword.take(args, [:name]))
+  defmodule Target do
+    defstruct [:pid, :mode]
   end
 
-  def start_link(args \\ []) do
-    merged_args = args(args)
-    GenServer.start_link(__MODULE__, merged_args, Keyword.take(args, [:name]))
+  defstruct [:target, :config, :socket, handshake: false]
+
+  def start_link(%Target{} = target) do
+    GenServer.start_link(__MODULE__, target, [])
   end
 
-  defp args(args) do
-    args =
-      @default_args
-      |> Keyword.merge(Application.get_all_env(:drain))
-      |> Keyword.merge(args)
-      |> Keyword.take(Keyword.keys(@default_args))
-
-    Logger.warn("Link Keyword.merge #{inspect(args)}")
-    args
+  def start_link(_) do
+    :ignore
   end
 
   @impl true
-  def init(args) do
-    {host, port} = endpoint = endpoint(args)
+  def init(target) do
+    Registry.register(Stormex.Link.Registry, target.pid, :init)
 
-    retries = args[:retries]
-    unless is_integer(retries), do: raise("The retries option must be an integer")
+    config = Config.get()
 
-    Logger.info(["Connecting to ", host, ?:, Integer.to_string(port)])
-
-    {:ok, %__MODULE__{target: args[:target], args: args},
-     {:continue, {:connect, endpoint, retries}}}
+    {:ok, %__MODULE__{target: target, config: config}, {:continue, {:connect, config.retries}}}
   end
 
   @impl true
-  def handle_continue({:connect, {host, port} = endpoint, retries}, %__MODULE__{} = state)
-      when is_integer(retries) and retries > 0 do
+  def handle_continue({:connect, retries}, state) when retries > 0 do
+    {host, port} = endpoint(state.config.connection)
+
     case :gen_tcp.connect(host, port, [:binary, packet: 4, active: true]) do
       {:ok, socket} ->
         Logger.debug(fn -> ["Connection established - id: ", inspect(socket)] end)
-        Process.send_after(self(), :handshake_timeout, @handshake_timeout)
+        Process.send_after(self(), :handshake_timeout, state.config.handshake_timeout)
         {:noreply, %__MODULE__{state | socket: socket}}
 
       {:error, reason} ->
         Logger.error(["Drain TCP connection failed ", inspect(reason)])
-        :timer.sleep(1000)
+        Process.sleep(state.config.retries_interval)
 
-        {:noreply, %__MODULE__{state | socket: reason},
-         {:continue, {:connect, endpoint, retries - 1}}}
+        {:noreply, %__MODULE__{state | socket: reason}, {:continue, {:connect, retries - 1}}}
     end
   end
 
-  def handle_continue({:connect, _endpoint, _retries}, state) do
+  def handle_continue({:connect, _retries}, state) do
     {:stop, state.socket, state}
   end
 
-  # Processes the incoming TCP frames
   @impl true
   def handle_info({:tcp, socket, packet}, state) do
     case Protocol.decode(packet) do
@@ -94,10 +69,10 @@ defmodule Stormex.Link do
 
             %{} ->
               Logger.debug("Got msg #{inspect(msg)}")
+              notify_target(msg, state.target)
               state
           end
 
-        # invoke_callback({:recv, msg}, state)
         {:noreply, %__MODULE__{state | socket: socket}}
 
       {:error, reason} ->
@@ -108,12 +83,12 @@ defmodule Stormex.Link do
 
   def handle_info({:tcp_error = error, _socket, reason}, state) do
     Logger.error("Connection failure: #{inspect(reason)}")
-    reconnect(error, state)
+    {:noreply, %__MODULE__{state | socket: error}, {:continue, {:connect, state.config.retries}}}
   end
 
   def handle_info({:tcp_closed = error, _socket}, state) do
     Logger.warn("TCP connection closed")
-    reconnect(error, state)
+    {:noreply, %__MODULE__{state | socket: error}, {:continue, {:connect, state.config.retries}}}
   end
 
   def handle_info(:handshake_timeout, %__MODULE__{handshake: false} = state) do
@@ -125,24 +100,24 @@ defmodule Stormex.Link do
     {:noreply, state}
   end
 
-  defp reconnect(error, state) do
-    state = %__MODULE__{state | socket: error}
-
-    {host, port} = endpoint = endpoint(state.args)
-    retries = state.args[:retries]
-
-    Logger.warn(["Reconnecting to ", host, ?:, Integer.to_string(port)])
-
-    {:noreply, state, {:continue, {:connect, endpoint, retries}}}
+  defp notify_target(msg, target) do
+    case target.mode do
+      :send -> Process.send(target.pid, msg, [])
+      :call -> GenServer.call(target.pid, msg)
+      :cast -> GenServer.cast(target.pid, msg)
+      # :fun -> apply(fun, args)
+      _ -> Logger.error("Can't notify #{inspect(target.pid)} with #{inspect(target.mode)}")
+    end
   end
 
-  defp endpoint(args) do
-    with true <- args[:discover],
-         {:ok, hostport} <- Stormex.Discover.discover() do
-      hostport
-    else
-      _ ->
-        {to_charlist(args[:host]), args[:port]}
+  defp endpoint(%Config.Connection{} = conn) do
+    case conn.discover_mode do
+      :discover ->
+        # Beacon-magic
+        raise "Beacon-magic not implemented yet"
+
+      :static ->
+        {to_charlist(conn.params[:host]), conn.params[:port]}
     end
   end
 end

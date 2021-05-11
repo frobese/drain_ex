@@ -1,54 +1,127 @@
 defmodule Stormex.Discover do
+  use GenServer
+
   require Logger
 
-  @default_args [
-    autostart: true,
-    groups: [
-      [group: "default"]
-    ]
-  ]
+  alias Stormex.Config
 
-  def start() do
-    Keyword.get(args([]), :groups)
-    |> Enum.each(&start_group/1)
+  defmodule Beacon do
+    defstruct [:host, :port, :iid, :group, :first_seen, :last_seen]
   end
 
-  def stop() do
-    DynamicSupervisor.stop(Stormex.Discover.Supervisor)
-  end
+  defstruct [:config, :socket, :beacons]
 
   def beacons() do
-    Registry.select(Stormex.Discover.Registry, [{{:_, :"$2", :_}, [], [:"$2"]}])
-    |> Enum.map(&gather_beacons/1)
-    |> List.flatten()
+    GenServer.call(__MODULE__, :beacons)
   end
 
-  def beacons(group) do
-    Registry.lookup(Stormex.Discover.Registry, group)
-    |> Enum.map(fn {pid, _value} -> pid end)
-    |> Enum.map(&gather_beacons/1)
-    |> List.flatten()
+  def start_link(_args) do
+    GenServer.start_link(__MODULE__, Config.get(), name: __MODULE__)
   end
 
-  def autostart?() do
-    Keyword.get(args([]), :autostart)
+  def init(%Config{connection: %Config.Connection{discover_mode: :static}}) do
+    :ignore
   end
 
-  defp gather_beacons(pid) do
-    GenServer.call(pid, :beacons)
+  @impl true
+  def init(config) do
+    case :gen_udp.open(0, [:binary, {:active, true}, {:broadcast, true}]) do
+      {:ok, socket} ->
+        {:ok, %__MODULE__{socket: socket, config: config, beacons: %{}}, {:continue, :discover}}
+
+      {:error, reason} ->
+        Logger.error(":gen_udp.open failed with: #{inspect(reason)}")
+        {:stop, reason}
+    end
   end
 
-  defp start_group(group_args) do
-    DynamicSupervisor.start_child(
-      Stormex.Discover.Supervisor,
-      {Stormex.Discover.Server, group_args}
-    )
+  @impl true
+  def handle_continue(:discover, state) do
+    case :gen_udp.send(
+           state.socket,
+           state.config.connection.params[:discover_addr],
+           state.config.connection.params[:discover_port],
+           locator(state.config.group)
+         ) do
+      :ok ->
+        Process.send_after(self(), :discover, state.config.connection.params[:discover_interval])
+        {:noreply, state}
+
+      {:error, reason} ->
+        Logger.error(":gen_udp.send failed with: #{inspect(reason)}")
+        :gen_udp.close(state.socket)
+        {:stop, reason}
+    end
   end
 
-  defp args(args) do
-    @default_args
-    |> Keyword.merge(Application.get_env(:stormex, __MODULE__, []))
-    |> Keyword.merge(args)
-    |> Keyword.take(Keyword.keys(@default_args))
+  @impl true
+  def handle_call(:beacons, _, state) do
+    {:reply, Map.values(state.beacons), state}
+  end
+
+  @impl true
+  def handle_call(msg, from, state) do
+    Logger.warn("Ignored message #{inspect(msg)} from #{inspect(from)}")
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(:discover, state) do
+    {:noreply, state, {:continue, :discover}}
+  end
+
+  @impl true
+  def handle_info({:udp, _socket, _addr, _in_port, _packet} = udp, state) do
+    beacon = parse_udp_msg!(udp)
+    now = :os.system_time()
+
+    new_map =
+      if Map.has_key?(state.beacons, beacon.iid) do
+        {_, return} =
+          Map.get_and_update!(state.beacons, beacon.iid, fn %Beacon{} = old ->
+            {old, %Beacon{old | last_seen: now, host: beacon.host, port: beacon.port}}
+          end)
+
+        return
+      else
+        Map.put(state.beacons, beacon.iid, %Beacon{beacon | first_seen: now, last_seen: now})
+      end
+
+    {:noreply, %__MODULE__{state | beacons: new_map}}
+  end
+
+  @impl true
+  def handle_info(msg, state) do
+    Logger.info("#{inspect(msg)}")
+    {:noreply, state}
+  end
+
+  defp parse_udp_msg!(
+         {:udp, _socket, host, _bport,
+          <<"DRA", 1, group::binary-size(8), iid::binary-size(8), port::16>>}
+       ) do
+    %Beacon{host: host, port: port, iid: iid, group: group}
+  end
+
+  defp parse_udp_msg!(_) do
+    raise(ArgumentError, "Can't parse udp_message into a beacon")
+  end
+
+  defp locator(group) do
+    [
+      <<"DRA", 1>>,
+      format_group(group),
+      # iid 0
+      <<0::64>>,
+      # port 0
+      <<0::16>>
+    ]
+  end
+
+  defp format_group(group) do
+    group
+    |> to_string()
+    |> String.pad_trailing(8, "_")
+    |> String.slice(0, 8)
   end
 end
