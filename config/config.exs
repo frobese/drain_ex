@@ -1,6 +1,6 @@
 import Config
 
-# config :logger, :console, level: :error
+config :logger, :console, level: :error
 
 # config :stormex, Stormex.Config,
 #   group: "default_",

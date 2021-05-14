@@ -19,7 +19,7 @@ defmodule Stormex.Config do
 
   defstruct [:group, :retries, :retries_interval, :handshake_timeout, :connection]
 
-  def get() do
+  def fetch() do
     @default
     |> Keyword.merge(Application.get_env(:stormex, __MODULE__, []))
     |> Keyword.update(:connection, [], &default_connection/1)

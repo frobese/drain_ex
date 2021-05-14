@@ -5,14 +5,10 @@ defmodule Stormex.Link do
 
   alias Stormex.{Config, Protocol}
 
-  defmodule Target do
-    defstruct [:pid, :mode]
-  end
+  defstruct [:callback, :config, :socket, handshake: false]
 
-  defstruct [:target, :config, :socket, handshake: false]
-
-  def start_link(%Target{} = target) do
-    GenServer.start_link(__MODULE__, target, [])
+  def start_link(callback) when is_function(callback) do
+    GenServer.start_link(__MODULE__, callback, [])
   end
 
   def start_link(_) do
@@ -20,12 +16,11 @@ defmodule Stormex.Link do
   end
 
   @impl true
-  def init(target) do
-    Registry.register(Stormex.Link.Registry, target.pid, :init)
+  def init(callback) do
+    config = Config.fetch()
 
-    config = Config.get()
-
-    {:ok, %__MODULE__{target: target, config: config}, {:continue, {:connect, config.retries}}}
+    {:ok, %__MODULE__{callback: callback, config: config},
+     {:continue, {:connect, config.retries}}}
   end
 
   @impl true
@@ -50,6 +45,23 @@ defmodule Stormex.Link do
     {:stop, state.socket, state}
   end
 
+  # TODO does the cmd come from a registered process ?
+  @impl true
+  def handle_call(%{__struct__: struct} = cmd, _from, state)
+      when struct in [
+             Protocol.Pub,
+             Protocol.Get,
+             Protocol.List,
+             Protocol.ChkSub,
+             Protocol.ChkDup,
+             Protocol.Unsub,
+             Protocol.Undup,
+             Protocol.Sub,
+             Protocol.Dup
+           ] do
+    {:reply, :gen_tcp.send(state.socket, Protocol.encode(cmd)), state}
+  end
+
   @impl true
   def handle_info({:tcp, socket, packet}, state) do
     case Protocol.decode(packet) do
@@ -69,7 +81,7 @@ defmodule Stormex.Link do
 
             %{} ->
               Logger.debug("Got msg #{inspect(msg)}")
-              notify_target(msg, state.target)
+              apply(state.callback, [msg])
               state
           end
 
@@ -98,16 +110,6 @@ defmodule Stormex.Link do
 
   def handle_info(:handshake_timeout, state) do
     {:noreply, state}
-  end
-
-  defp notify_target(msg, target) do
-    case target.mode do
-      :send -> Process.send(target.pid, msg, [])
-      :call -> GenServer.call(target.pid, msg)
-      :cast -> GenServer.cast(target.pid, msg)
-      # :fun -> apply(fun, args)
-      _ -> Logger.error("Can't notify #{inspect(target.pid)} with #{inspect(target.mode)}")
-    end
   end
 
   defp endpoint(%Config.Connection{} = conn) do

@@ -4,7 +4,7 @@ defmodule Stormex.Application do
   def start(_type, _args) do
     children = [
       {Stormex.Discover, []},
-      {Registry, keys: :duplicate, name: Stormex.Link.Registry}
+      {Registry, keys: :unique, name: Stormex.Link.Registry}
     ]
 
     opts = [strategy: :one_for_one, name: Stormex.Supervisor]

@@ -16,7 +16,7 @@ defmodule Stormex.Discover do
   end
 
   def start_link(_args) do
-    GenServer.start_link(__MODULE__, Config.get(), name: __MODULE__)
+    GenServer.start_link(__MODULE__, Config.fetch(), name: __MODULE__)
   end
 
   def init(%Config{connection: %Config.Connection{discover_mode: :static}}) do
