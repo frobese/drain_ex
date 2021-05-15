@@ -3,6 +3,15 @@ defmodule Stormex.Config do
     defstruct [:discover_mode, :params]
   end
 
+  @default_port [
+    autostart: false,
+    name: Stormex.Port,
+    exe: nil,
+    bind_addr: "0.0.0.0:6986",
+    datadir: nil,
+    readonly: false,
+    snapshot: false
+  ]
   @default_static [host: "localhost", port: 6986]
   @default_discover [
     discover_port: 5670,
@@ -14,15 +23,17 @@ defmodule Stormex.Config do
     retries: 5,
     retries_interval: 5000,
     handshake_timeout: 5000,
-    connection: {:static, @default_static}
+    connection: {:static, @default_static},
+    port: @default_port
   ]
 
-  defstruct [:group, :retries, :retries_interval, :handshake_timeout, :connection]
+  defstruct [:group, :retries, :retries_interval, :handshake_timeout, :connection, :port]
 
   def fetch() do
     @default
     |> Keyword.merge(Application.get_env(:stormex, __MODULE__, []))
     |> Keyword.update(:connection, [], &default_connection/1)
+    |> Keyword.update(:port, [], &default_port/1)
     |> (&struct(__MODULE__, &1)).()
   end
 
@@ -45,6 +56,10 @@ defmodule Stormex.Config do
   defp default_connection(_) do
     # default
     default_connection({:static, @default_static})
+  end
+
+  defp default_port(args) do
+    default(args, @default_port)
   end
 
   defp default(params, default) do

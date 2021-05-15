@@ -4,6 +4,7 @@ defmodule Stormex.Application do
   def start(_type, _args) do
     children = [
       {Stormex.Discover, []},
+      {Stormex.Port, []},
       {Registry, keys: :unique, name: Stormex.Link.Registry}
     ]
 
