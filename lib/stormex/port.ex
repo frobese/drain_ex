@@ -116,6 +116,9 @@ defmodule Stormex.Port do
 
   def get_exe(), do: get_exe(architecture())
   # we should resolve more architectures...
+  def get_exe("x86_64-pc-linux-musl" <> _),
+    do: Path.join(:code.priv_dir(:stormex), "stormdrain-x86_64-unknown-linux-musl")
+
   def get_exe("x86_64-pc-linux" <> _),
     do: Path.join(:code.priv_dir(:stormex), "stormdrain-x86_64-unknown-linux-gnu")
 
