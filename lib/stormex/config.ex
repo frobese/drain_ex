@@ -5,6 +5,8 @@ defmodule Stormex.Config do
 
   @default_port [
     autostart: false,
+    verbose: 0,
+    dashboard: "0.0.0.0:8080",
     name: Stormex.Port,
     exe: nil,
     bind_addr: "0.0.0.0:6986",

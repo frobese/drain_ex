@@ -31,7 +31,15 @@ defmodule Stormex.Port do
     readonly = if args[:readonly], do: "--readonly", else: []
     snapshot = if args[:snapshot], do: "--snapshot", else: []
     datadir = if args[:datadir], do: args[:datadir], else: []
-    params = [bind_addr, "serve", "--pipe", readonly, snapshot, datadir] |> List.flatten()
+    dashboard = if args[:dashboard], do: ["--http", args[:dashboard]], else: []
+
+    verbose =
+      if is_integer(args[:verbose]) and args[:verbose] > 0, do: ["-v", args[:verbose]], else: []
+
+    params =
+      [bind_addr, "serve", "--pipe", verbose, dashboard, readonly, snapshot, datadir]
+      |> List.flatten()
+
     Logger.info("Launching server #{exe} with #{inspect(params)}")
     port = Port.open({:spawn_executable, exe}, [:binary, {:packet, 4}, args: params])
     Logger.debug("Port #{inspect(Port.info(port))}")

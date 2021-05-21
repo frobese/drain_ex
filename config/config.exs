@@ -8,6 +8,8 @@ config :logger, :console, level: :warn
 #   retries_interval: 5000,
 #   handshake_timeout: 5000,
 #   port: [
+#     verbose: 0,
+#     dashboard: "0.0.0.0:8080",
 #     autostart: false,
 #     name: Stormex.Port,
 #     exe: nil,
