@@ -1,9 +1,9 @@
-defmodule Stormex.Link do
+defmodule DrainEx.Link do
   use GenServer
 
   require Logger
 
-  alias Stormex.{Config, Protocol}
+  alias DrainEx.{Config, Protocol}
 
   defstruct [:callback, :config, :socket, handshake: false]
 

@@ -1,4 +1,4 @@
-defmodule Stormex.Config do
+defmodule DrainEx.Config do
   defmodule Connection do
     defstruct [:discover_mode, :params]
   end
@@ -7,7 +7,7 @@ defmodule Stormex.Config do
     autostart: false,
     verbose: 0,
     dashboard: "0.0.0.0:8080",
-    name: Stormex.Port,
+    name: DrainEx.Port,
     exe: nil,
     bind_addr: "0.0.0.0:6986",
     datadir: nil,
@@ -33,7 +33,7 @@ defmodule Stormex.Config do
 
   def fetch() do
     @default
-    |> Keyword.merge(Application.get_env(:stormex, __MODULE__, []))
+    |> Keyword.merge(Application.get_env(:drain_ex, __MODULE__, []))
     |> Keyword.update(:connection, [], &default_connection/1)
     |> Keyword.update(:port, [], &default_port/1)
     |> (&struct(__MODULE__, &1)).()

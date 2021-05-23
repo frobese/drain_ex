@@ -1,9 +1,9 @@
-defmodule Stormex.MixProject do
+defmodule DrainEx.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :stormex,
+      app: :drain_ex,
       version: "0.1.0",
       elixir: "~> 1.10",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule Stormex.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      mod: {Stormex.Application, []},
+      mod: {DrainEx.Application, []},
       extra_applications: [:logger]
     ]
   end

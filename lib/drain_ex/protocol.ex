@@ -1,4 +1,4 @@
-defmodule Stormex.Protocol do
+defmodule DrainEx.Protocol do
   require Logger
 
   defmodule Ok do

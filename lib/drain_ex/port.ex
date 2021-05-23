@@ -1,4 +1,4 @@
-defmodule Stormex.Port do
+defmodule DrainEx.Port do
   @moduledoc ~S"""
   Spawns a Stormdrain server with some options.
 
@@ -10,10 +10,10 @@ defmodule Stormex.Port do
 
   use GenServer
   require Logger
-  alias Stormex.Protocol
+  alias DrainEx.Protocol
 
   def start_link(_args \\ []) do
-    config = Stormex.Config.fetch()
+    config = DrainEx.Config.fetch()
 
     if config.port[:autostart] do
       Logger.debug("Server args #{inspect(config.port)}")
@@ -125,11 +125,11 @@ defmodule Stormex.Port do
   def get_exe(), do: get_exe(architecture())
   # we should resolve more architectures...
   def get_exe("x86_64-pc-linux-musl" <> _),
-    do: Path.join(:code.priv_dir(:stormex), "stormdrain-x86_64-unknown-linux-musl")
+    do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-unknown-linux-musl")
 
   def get_exe("x86_64-pc-linux" <> _),
-    do: Path.join(:code.priv_dir(:stormex), "stormdrain-x86_64-unknown-linux-gnu")
+    do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-unknown-linux-gnu")
 
   def get_exe("x86_64-apple-darwin" <> _),
-    do: Path.join(:code.priv_dir(:stormex), "stormdrain-x86_64-apple-darwin")
+    do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-apple-darwin")
 end

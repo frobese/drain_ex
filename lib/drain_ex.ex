@@ -1,5 +1,5 @@
-defmodule Stormex do
-  alias Stormex.Protocol
+defmodule DrainEx do
+  alias DrainEx.Protocol
 
   def command(cmd, mode \\ :send)
 
@@ -25,13 +25,13 @@ defmodule Stormex do
 
   def publish(msg, topic \\ "", mode \\ :send) do
     command_link(mode)
-    |> GenServer.call(%Stormex.Protocol.Pub{topic: topic, payload: msg})
+    |> GenServer.call(%DrainEx.Protocol.Pub{topic: topic, payload: msg})
   end
 
   # @spec subscribe(topic :: String.t()) :: :ok | :error
   def subscribe(topic \\ "", mode \\ :send) do
     subscription_link(topic, mode)
-    |> GenServer.call(%Stormex.Protocol.Sub{topic: topic})
+    |> GenServer.call(%DrainEx.Protocol.Sub{topic: topic})
   end
 
   def unsubscribe() do
@@ -43,7 +43,7 @@ defmodule Stormex do
     which_subscriptions(self())
     |> Enum.filter(fn {_, _, subbed_topic} -> {:sub, topic} == subbed_topic end)
     |> Enum.each(fn {_, pid, _topic} ->
-      Registry.unregister(Stormex.Link.Registry, pid)
+      Registry.unregister(DrainEx.Link.Registry, pid)
       GenServer.stop(pid)
     end)
   end
@@ -61,13 +61,13 @@ defmodule Stormex do
   end
 
   def which_links() do
-    Registry.select(Stormex.Link.Registry, [
+    Registry.select(DrainEx.Link.Registry, [
       {{:"$1", :"$2", :"$3"}, [], [{{:"$2", :"$1", :"$3"}}]}
     ])
   end
 
   def which_links(pid) when is_pid(pid) do
-    Registry.select(Stormex.Link.Registry, [
+    Registry.select(DrainEx.Link.Registry, [
       {{:"$1", :"$2", :"$3"}, [{:==, :"$2", pid}], [{{:"$2", :"$1", :"$3"}}]}
     ])
   end
@@ -81,8 +81,8 @@ defmodule Stormex do
     |> Enum.filter(&filter_cmd/1)
     |> case do
       [] ->
-        {:ok, pid} = Stormex.Link.start_link(callback(mode))
-        Registry.register(Stormex.Link.Registry, pid, :cmd)
+        {:ok, pid} = DrainEx.Link.start_link(callback(mode))
+        Registry.register(DrainEx.Link.Registry, pid, :cmd)
         pid
 
       [{_, pid, _} | _] ->
@@ -95,8 +95,8 @@ defmodule Stormex do
     |> Enum.filter(fn {_, _, subbed_topic} -> {:sub, topic} == subbed_topic end)
     |> case do
       [] ->
-        {:ok, pid} = Stormex.Link.start_link(callback(mode))
-        Registry.register(Stormex.Link.Registry, pid, {:sub, topic})
+        {:ok, pid} = DrainEx.Link.start_link(callback(mode))
+        Registry.register(DrainEx.Link.Registry, pid, {:sub, topic})
         pid
 
       [{_, pid, _} | _] ->
@@ -127,7 +127,7 @@ defmodule Stormex do
   end
 
   defp send_callback(msg) do
-    case Registry.lookup(Stormex.Link.Registry, self()) do
+    case Registry.lookup(DrainEx.Link.Registry, self()) do
       [{pid, _value}] ->
         Process.send(pid, msg, [])
         :ok
@@ -138,7 +138,7 @@ defmodule Stormex do
   end
 
   defp call_callback(msg) do
-    case Registry.lookup(Stormex.Link.Registry, self()) do
+    case Registry.lookup(DrainEx.Link.Registry, self()) do
       [{pid, _value}] ->
         GenServer.call(pid, msg)
 
@@ -148,7 +148,7 @@ defmodule Stormex do
   end
 
   defp cast_callback(msg) do
-    case Registry.lookup(Stormex.Link.Registry, self()) do
+    case Registry.lookup(DrainEx.Link.Registry, self()) do
       [{pid, _value}] ->
         GenServer.cast(pid, msg)
 

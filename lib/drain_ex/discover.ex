@@ -1,9 +1,9 @@
-defmodule Stormex.Discover do
+defmodule DrainEx.Discover do
   use GenServer
 
   require Logger
 
-  alias Stormex.Config
+  alias DrainEx.Config
 
   defmodule Beacon do
     defstruct [:host, :port, :iid, :group, :first_seen, :last_seen]
