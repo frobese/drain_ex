@@ -14,9 +14,9 @@ defmodule DrainEx.Port do
 
   def start_link(_args \\ []) do
     config = DrainEx.Config.fetch()
+    Logger.debug("Server args #{inspect(config.port)}")
 
     if config.port[:autostart] do
-      Logger.debug("Server args #{inspect(config.port)}")
       GenServer.start_link(__MODULE__, config.port, name: config.port[:name])
     else
       Logger.info("Ignoring port")
