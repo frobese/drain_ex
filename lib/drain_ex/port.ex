@@ -28,6 +28,7 @@ defmodule DrainEx.Port do
     Process.flag(:trap_exit, true)
     exe = args[:exe] || get_exe()
     bind_addr = if args[:bind_addr], do: ["-a", args[:bind_addr]], else: []
+    peers = if args[:peers], do: prepare_peer_parameter(args[:peers]), else: []
     readonly = if args[:readonly], do: "--readonly", else: []
     snapshot = if args[:snapshot], do: "--snapshot", else: []
     datadir = if args[:datadir], do: args[:datadir], else: []
@@ -37,7 +38,7 @@ defmodule DrainEx.Port do
       if is_integer(args[:verbose]) and args[:verbose] > 0, do: ["-v", args[:verbose]], else: []
 
     params =
-      [bind_addr, "serve", "--pipe", verbose, dashboard, readonly, snapshot, datadir]
+      [peers, bind_addr, "serve", "--pipe", verbose, dashboard, readonly, snapshot, datadir]
       |> List.flatten()
 
     Logger.info("Launching server #{exe} with #{inspect(params)}")
@@ -132,4 +133,10 @@ defmodule DrainEx.Port do
 
   def get_exe("x86_64-apple-darwin" <> _),
     do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-apple-darwin")
+
+  defp prepare_peer_parameter(list) do
+    list
+    |> Enum.map(fn peer -> ["-p", peer] end)
+    |> List.flatten()
+  end
 end

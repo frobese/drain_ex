@@ -16,7 +16,8 @@ config :logger, :console, level: :warn
 #     bind_addr: "0.0.0.0:6986"
 #     datadir: nil,
 #     readonly: false,
-#     snapshot: false
+#     snapshot: false,
+#     peers: []
 #   ]
 #   connection: {:static, [port: 6986]}
 #   connection:

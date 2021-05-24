@@ -12,7 +12,8 @@ defmodule DrainEx.Config do
     bind_addr: "0.0.0.0:6986",
     datadir: nil,
     readonly: false,
-    snapshot: false
+    snapshot: false,
+    peers: []
   ]
   @default_static [host: "localhost", port: 6986]
   @default_discover [
