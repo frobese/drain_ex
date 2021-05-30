@@ -55,9 +55,7 @@ defmodule DrainEx.Port do
 
   def handle_info({:DOWN, ref, :port, object, reason}, state) do
     Logger.error(
-      "Stormdrain server down: ref is #{inspect(ref)} object: #{inspect(object)} reason: #{
-        inspect(reason)
-      } state was #{inspect(state)}"
+      "Stormdrain server down: ref is #{inspect(ref)} object: #{inspect(object)} reason: #{inspect(reason)} state was #{inspect(state)}"
     )
 
     # try to restart...?
@@ -125,11 +123,11 @@ defmodule DrainEx.Port do
 
   def get_exe(), do: get_exe(architecture())
   # we should resolve more architectures...
-  def get_exe("x86_64-pc-linux-musl" <> _),
+  def get_exe("x86_64-pc-linux" <> _),
     do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-unknown-linux-musl")
 
-  def get_exe("x86_64-pc-linux" <> _),
-    do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-unknown-linux-gnu")
+  def get_exe("x86_64-unknown-linux" <> _),
+    do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-unknown-linux-musl")
 
   def get_exe("x86_64-apple-darwin" <> _),
     do: Path.join(:code.priv_dir(:drain_ex), "stormdrain-x86_64-apple-darwin")
