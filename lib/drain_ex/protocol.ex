@@ -3,15 +3,15 @@ defmodule DrainEx.Protocol do
 
   defmodule Ok do
     @moduledoc false
-    defstruct msg: nil
+    defstruct text: nil
   end
 
   defmodule Err do
     @moduledoc false
-    defstruct msg: nil
+    defstruct text: nil
   end
 
-  defmodule Hello do
+  defmodule Info do
     @moduledoc false
     defstruct ver: nil, state: nil, instance: nil, streams: []
   end
@@ -61,12 +61,18 @@ defmodule DrainEx.Protocol do
     defstruct sid: nil
   end
 
-  defmodule Event do
+  defmodule Msg do
     @moduledoc false
     defstruct seq: nil, time: nil, topic: nil, payload: nil
   end
 
-  defmodule Quit do
+  defmodule Connect do
+    @moduledoc false
+    # empty for now
+    defstruct []
+  end
+
+  defmodule Disconnect do
     @moduledoc false
     # empty for now
     defstruct []
@@ -122,7 +128,7 @@ defmodule DrainEx.Protocol do
     |> case do
       %{:Ok => params} -> struct(Ok, params)
       %{:Err => params} -> struct(Err, params)
-      %{:Hello => params} -> struct(Hello, params)
+      %{:Info => params} -> struct(Info, params)
       %{:Pub => params} -> struct(Pub, params)
       %{:Get => params} -> struct(Get, params)
       %{:ChkSub => params} -> struct(ChkSub, params)
@@ -132,8 +138,9 @@ defmodule DrainEx.Protocol do
       %{:Dup => params} -> struct(Dup, params)
       %{:Unsub => params} -> struct(Unsub, params)
       %{:Undup => params} -> struct(Undup, params)
-      %{:Event => params} -> struct(Event, params)
-      %{:Quit => _params} -> %Quit{}
+      %{:Msg => params} -> struct(Msg, params)
+      %{:Connect => _params} -> %Connect{}
+      %{:Disconnect => _params} -> %Disconnect{}
       %{:Ping => _params} -> %Ping{}
       %{:Pong => _params} -> %Pong{}
     end

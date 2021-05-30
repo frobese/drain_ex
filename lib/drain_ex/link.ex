@@ -30,6 +30,7 @@ defmodule DrainEx.Link do
     case :gen_tcp.connect(host, port, [:binary, packet: 4, active: true]) do
       {:ok, socket} ->
         Logger.debug(fn -> ["Connection established - id: ", inspect(socket)] end)
+        :ok = :gen_tcp.send(socket, Protocol.encode(%Protocol.Connect{}))
         Process.send_after(self(), :handshake_timeout, state.config.handshake_timeout)
         {:noreply, %__MODULE__{state | socket: socket}}
 
@@ -69,8 +70,8 @@ defmodule DrainEx.Link do
         # Some special cases...
         state =
           case msg do
-            %Protocol.Hello{} = hello ->
-              Logger.debug("Got hello from #{hello.ver}")
+            %Protocol.Info{} = info ->
+              Logger.debug("Got info from #{info.ver}")
               %__MODULE__{state | handshake: true}
 
             %Protocol.Ping{} ->

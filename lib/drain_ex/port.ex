@@ -43,6 +43,7 @@ defmodule DrainEx.Port do
 
     Logger.info("Launching server #{exe} with #{inspect(params)}")
     port = Port.open({:spawn_executable, exe}, [:binary, {:packet, 4}, args: params])
+    send(port, {self(), {:command, %Protocol.Connect{} |> Protocol.encode()}})
     Logger.debug("Port #{inspect(Port.info(port))}")
     Port.monitor(port)
     {:ok, port}
@@ -68,8 +69,8 @@ defmodule DrainEx.Port do
       {:ok, msg, _rest} ->
         # Some special cases...
         case msg do
-          %Protocol.Hello{} = hello ->
-            Logger.debug("Got hello from #{hello.ver}")
+          %Protocol.Info{} = info ->
+            Logger.debug("Got info from #{info.ver}")
 
           %Protocol.Ping{} ->
             Logger.debug("Got ping, sending pong")
