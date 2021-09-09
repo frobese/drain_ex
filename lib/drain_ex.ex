@@ -11,8 +11,7 @@ defmodule DrainEx do
   def command(%{__struct__: struct} = cmd, mode)
       when struct in [
              Protocol.Pub,
-             Protocol.Get,
-             Protocol.List,
+             Protocol.Info,
              Protocol.ChkSub,
              Protocol.ChkDup,
              Protocol.Unsub,

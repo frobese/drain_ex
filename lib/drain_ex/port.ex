@@ -28,6 +28,7 @@ defmodule DrainEx.Port do
     Process.flag(:trap_exit, true)
     exe = args[:exe] || get_exe()
     bind_addr = if args[:bind_addr], do: ["-a", args[:bind_addr]], else: []
+    discover = if args[:discover], do: ["-d", args[:discover]], else: []
     peers = if args[:peers], do: prepare_peer_parameter(args[:peers]), else: []
     readonly = if args[:readonly], do: "--readonly", else: []
     snapshot = if args[:snapshot], do: "--snapshot", else: []
@@ -38,7 +39,18 @@ defmodule DrainEx.Port do
       if is_integer(args[:verbose]) and args[:verbose] > 0, do: ["-v", args[:verbose]], else: []
 
     params =
-      [peers, bind_addr, "serve", "--pipe", verbose, dashboard, readonly, snapshot, datadir]
+      [
+        peers,
+        discover,
+        bind_addr,
+        "serve",
+        "--pipe",
+        verbose,
+        dashboard,
+        readonly,
+        snapshot,
+        datadir
+      ]
       |> List.flatten()
 
     Logger.info("Launching server #{exe} with #{inspect(params)}")

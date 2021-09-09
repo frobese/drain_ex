@@ -51,8 +51,6 @@ defmodule DrainEx.Link do
   def handle_call(%{__struct__: struct} = cmd, _from, state)
       when struct in [
              Protocol.Pub,
-             Protocol.Get,
-             Protocol.List,
              Protocol.ChkSub,
              Protocol.ChkDup,
              Protocol.Unsub,

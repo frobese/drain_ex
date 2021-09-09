@@ -21,14 +21,14 @@ defmodule DrainEx.Protocol do
     defstruct qos: 0, topic: nil, payload: nil
   end
 
-  defmodule Get do
-    @moduledoc false
-    defstruct sid: nil, seq: nil
-  end
+  # defmodule Get do
+  #   @moduledoc false
+  #   defstruct sid: nil, seq: nil
+  # end
 
   defmodule ChkSub do
     @moduledoc false
-    defstruct topic: nil, from: nil, recent: nil, limit: nil, unique: nil
+    defstruct topic: nil, from: [], recent: nil, limit: nil, unique: nil
   end
 
   defmodule ChkDup do
@@ -36,14 +36,14 @@ defmodule DrainEx.Protocol do
     defstruct sid: nil, from: nil
   end
 
-  defmodule List do
-    @moduledoc false
-    defstruct topic: nil, from: nil, recent: nil, limit: nil, unique: nil
-  end
+  # defmodule List do
+  #   @moduledoc false
+  #   defstruct topic: nil, from: nil, recent: nil, limit: nil, unique: nil
+  # end
 
   defmodule Sub do
     @moduledoc false
-    defstruct topic: nil, from: 0, recent: 0, limit: 0, unique: false
+    defstruct topic: nil, from: [], recent: 0, limit: 0, unique: false
   end
 
   defmodule Dup do
@@ -130,10 +130,10 @@ defmodule DrainEx.Protocol do
       %{:Err => params} -> struct(Err, params)
       %{:Info => params} -> struct(Info, params)
       %{:Pub => params} -> struct(Pub, params)
-      %{:Get => params} -> struct(Get, params)
+      # %{:Get => params} -> struct(Get, params)
       %{:ChkSub => params} -> struct(ChkSub, params)
       %{:ChkDup => params} -> struct(ChkDup, params)
-      %{:List => params} -> struct(List, params)
+      # %{:List => params} -> struct(List, params)
       %{:Sub => params} -> struct(Sub, params)
       %{:Dup => params} -> struct(Dup, params)
       %{:Unsub => params} -> struct(Unsub, params)
