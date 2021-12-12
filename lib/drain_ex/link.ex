@@ -112,13 +112,6 @@ defmodule DrainEx.Link do
   end
 
   defp endpoint(%Config.Connection{} = conn) do
-    case conn.discover_mode do
-      :discover ->
-        # Beacon-magic
-        raise "Beacon-magic not implemented yet"
-
-      :static ->
-        {to_charlist(conn.params[:host]), conn.params[:port]}
-    end
+    {to_charlist(conn.params[:host]), conn.params[:port]}
   end
 end

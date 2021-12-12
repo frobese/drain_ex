@@ -4,11 +4,6 @@ defmodule DrainEx.Config do
   end
 
   @default_static [host: "localhost", port: 6986]
-  @default_discover [
-    discover_port: 5670,
-    discover_addr: {255, 255, 255, 255},
-    discover_interval: 1500
-  ]
   @default [
     group: "default_",
     retries: 5,
@@ -28,18 +23,6 @@ defmodule DrainEx.Config do
 
   defp default_connection({:static, params}) do
     %Connection{discover_mode: :static, params: default(params, @default_static)}
-  end
-
-  defp default_connection({:discover, params}) do
-    %Connection{discover_mode: :discover, params: default(params, @default_discover)}
-  end
-
-  defp default_connection({discover_mode}) when discover_mode in [:static, :discover] do
-    default_connection({discover_mode, []})
-  end
-
-  defp default_connection(discover_mode) when discover_mode in [:static, :discover] do
-    default_connection({discover_mode, []})
   end
 
   defp default_connection(_) do
