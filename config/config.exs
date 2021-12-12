@@ -7,19 +7,6 @@ config :logger, :console, level: :warn
 #   retries: 5,
 #   retries_interval: 5000,
 #   handshake_timeout: 5000,
-#   port: [
-#     verbose: 0,
-#     dashboard: "0.0.0.0:8080",
-#     autostart: true,
-#     name: DrainEx.Port,
-#     exe: nil,
-#     bind_addr: "0.0.0.0:6986",
-#     discover: e.g. "10.1.2.3", "10.1.2.3,10.1.2.4", "10.1.2.3-10.1.2.5", "1.2.3.0/24"
-#     datadir: nil,
-#     readonly: false,
-#     snapshot: false,
-#     peers: []
-#   ]
 #   connection: {:static, [port: 6986]}
 #   connection:
 #     {:discover,

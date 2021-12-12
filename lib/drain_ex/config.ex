@@ -3,18 +3,6 @@ defmodule DrainEx.Config do
     defstruct [:discover_mode, :params]
   end
 
-  @default_port [
-    autostart: false,
-    verbose: 0,
-    dashboard: "0.0.0.0:8080",
-    name: DrainEx.Port,
-    exe: nil,
-    bind_addr: "0.0.0.0:6986",
-    datadir: nil,
-    readonly: false,
-    snapshot: false,
-    peers: []
-  ]
   @default_static [host: "localhost", port: 6986]
   @default_discover [
     discover_port: 5670,
@@ -26,17 +14,15 @@ defmodule DrainEx.Config do
     retries: 5,
     retries_interval: 5000,
     handshake_timeout: 5000,
-    connection: {:static, @default_static},
-    port: @default_port
+    connection: {:static, @default_static}
   ]
 
-  defstruct [:group, :retries, :retries_interval, :handshake_timeout, :connection, :port]
+  defstruct [:group, :retries, :retries_interval, :handshake_timeout, :connection]
 
   def fetch() do
     @default
     |> Keyword.merge(Application.get_env(:drain_ex, __MODULE__, []))
     |> Keyword.update(:connection, [], &default_connection/1)
-    |> Keyword.update(:port, [], &default_port/1)
     |> (&struct(__MODULE__, &1)).()
   end
 
@@ -59,10 +45,6 @@ defmodule DrainEx.Config do
   defp default_connection(_) do
     # default
     default_connection({:static, @default_static})
-  end
-
-  defp default_port(args) do
-    default(args, @default_port)
   end
 
   defp default(params, default) do

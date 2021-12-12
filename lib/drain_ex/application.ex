@@ -4,7 +4,6 @@ defmodule DrainEx.Application do
   def start(_type, _args) do
     children = [
       {DrainEx.Discover, []},
-      {DrainEx.Port, []},
       {Registry, keys: :unique, name: DrainEx.Link.Registry}
     ]
 
