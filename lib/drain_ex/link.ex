@@ -48,9 +48,16 @@ defmodule DrainEx.Link do
 
   # TODO does the cmd come from a registered process ?
   @impl true
+  def handle_call(%{__struct__: Protocol.Pub} = cmd, _from, state) do
+    {:reply,
+     :gen_tcp.send(
+       state.socket,
+       Protocol.encode(%{cmd | payload: %CBOR.Tag{tag: :bytes, value: cmd.payload}})
+     ), state}
+  end
+
   def handle_call(%{__struct__: struct} = cmd, _from, state)
       when struct in [
-             Protocol.Pub,
              Protocol.ChkSub,
              Protocol.ChkDup,
              Protocol.Unsub,
